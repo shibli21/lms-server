@@ -1,4 +1,4 @@
-import { hash } from "argon2";
+import { hash, verify } from "argon2";
 import {
   Arg,
   Ctx,
@@ -94,6 +94,38 @@ export class UserResolver {
       }
     }
 
+    return { user };
+  }
+
+  @Mutation(() => UserResponse)
+  async login(
+    @Arg("email") email: string,
+    @Arg("password") password: string,
+    @Ctx() { res }: MyContext
+  ): Promise<UserResponse> {
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return { errors: [{ field: "email", message: "user doesn't exists" }] };
+    }
+
+    const valid = await verify(user.password, password);
+
+    if (!valid) {
+      return {
+        errors: [
+          {
+            field: "password",
+            message: "Password incorrect",
+          },
+        ],
+      };
+    }
+
+    const token = jwt.sign({ userId: user?.id }, `${process.env.JWT_SECRET}`);
+    res.cookie("token", token, {
+      httpOnly: true,
+      maxAge: 100000000000,
+    });
     return { user };
   }
 

@@ -45,7 +45,7 @@ export class User extends BaseEntity {
   numberOfBooksCheckedOut!: number;
 
   @OneToMany(() => CheckedOutBooks, (checkedOutBooks) => checkedOutBooks.id)
-  @Field(() => [CheckedOutBooks])
+  @Field(() => [CheckedOutBooks], { defaultValue: [] })
   checkedOutBooks: CheckedOutBooks[];
 
   @Field(() => String)
