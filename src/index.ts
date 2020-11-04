@@ -1,11 +1,19 @@
-import "reflect-metadata";
-import { HelloResolver } from "./resolvers/Hello";
 import { ApolloServer } from "apollo-server-express";
-import express from "express";
-import { buildSchema } from "type-graphql";
-import { createConnection } from "typeorm";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import express from "express";
+import "reflect-metadata";
+import { buildSchema } from "type-graphql";
+import { createConnection } from "typeorm";
+import { Author } from "./entities/Author";
+import { Book } from "./entities/Book";
+import { CheckedOutBooks } from "./entities/CheckedOutBooks";
+import { User } from "./entities/User";
+import { UserResolver } from "./resolvers/User";
+import { MyContext } from "./types/MyContext";
+import { config } from "dotenv";
+
+config();
 
 const main = async () => {
   await createConnection({
@@ -14,10 +22,10 @@ const main = async () => {
     port: 5433,
     password: "root",
     username: "postgres",
-    database: "chatApp",
+    database: "library",
     synchronize: true,
     logging: true,
-    entities: [],
+    entities: [Author, Book, CheckedOutBooks, User],
   });
 
   const app = express();
@@ -27,14 +35,18 @@ const main = async () => {
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [HelloResolver],
+      resolvers: [UserResolver],
       validate: false,
+    }),
+    context: ({ req, res }): MyContext => ({
+      req,
+      res,
     }),
   });
 
   apolloServer.applyMiddleware({ app, cors: false });
 
-  const port = 4001;
+  const port = process.env.PORT || 4000;
   app.listen(port, () => {
     console.log(`graphql server : http://localhost:${port}/graphql`);
   });
