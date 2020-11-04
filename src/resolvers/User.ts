@@ -35,9 +35,16 @@ class FieldError {
 
 @Resolver()
 export class UserResolver {
-  @Query(() => String)
-  hello() {
-    return "world";
+  @Query(() => User, { nullable: true })
+  me(@Ctx() { req }: MyContext) {
+    if (!req.userId) {
+      return null;
+    }
+    return User.findOne({
+      where: {
+        id: req.userId,
+      },
+    });
   }
 
   @Query(() => [User])
@@ -134,4 +141,7 @@ export class UserResolver {
     res.clearCookie("token");
     return true;
   }
+
+  // @Mutation(() => Boolean)
+  // async borrowBook(@Arg("bookId") bookId: number) {}
 }

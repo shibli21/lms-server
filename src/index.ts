@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 import { ApolloServer } from "apollo-server-express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -32,6 +33,16 @@ const main = async () => {
 
   app.use(cors({ origin: "http://localhost:3000", credentials: true }));
   app.use(cookieParser());
+
+  // ** middleware for getting the userId from cookies
+  app.use((req, _, next) => {
+    const token = req.cookies["token"];
+    try {
+      const response = jwt.verify(token, `${process.env.JWT_SECRET}`) as any;
+      (req as any).userId = response.userId;
+    } catch {}
+    next();
+  });
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
