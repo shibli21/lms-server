@@ -96,4 +96,10 @@ export class UserResolver {
 
     return { user };
   }
+
+  @Mutation(() => Boolean)
+  logout(@Ctx() { res }: MyContext) {
+    res.clearCookie("token");
+    return true;
+  }
 }
