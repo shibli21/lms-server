@@ -1,3 +1,4 @@
+import { BookResolver } from "./resolvers/Book";
 import jwt from "jsonwebtoken";
 import { ApolloServer } from "apollo-server-express";
 import cookieParser from "cookie-parser";
@@ -13,6 +14,7 @@ import { User } from "./entities/User";
 import { UserResolver } from "./resolvers/User";
 import { MyContext } from "./types/MyContext";
 import { config } from "dotenv";
+import { AuthorResolver } from "./resolvers/Author";
 
 config();
 
@@ -46,7 +48,7 @@ const main = async () => {
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [UserResolver],
+      resolvers: [UserResolver, BookResolver, AuthorResolver],
       validate: false,
     }),
     context: ({ req, res }): MyContext => ({

@@ -21,11 +21,11 @@ export class Book extends BaseEntity {
   @Field()
   isbnNumber!: number;
 
-  @Column({ unique: true })
+  @Column()
   @Field()
   title!: string;
 
-  @ManyToOne(() => Author, (author) => author.id)
+  @ManyToOne(() => Author, (author) => author.books, { cascade: true })
   @Field(() => Author)
   author: Author;
 
