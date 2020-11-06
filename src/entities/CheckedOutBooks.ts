@@ -17,21 +17,25 @@ export class CheckedOutBooks extends BaseEntity {
   @Field()
   id!: number;
 
-  @ManyToOne(() => User, (user) => user.studentId)
+  @ManyToOne(() => User, (user) => user.id)
   @Field(() => User)
-  studentId!: User;
+  issuedBy!: User;
 
-  @ManyToOne(() => Book, (book) => book.isbnNumber)
+  @ManyToOne(() => Book, (book) => book.id)
   @Field(() => Book)
-  bookId!: Book;
+  issuedBook!: Book;
 
   @Field(() => String)
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Field()
   @Column()
-  returnDate: Date;
+  returnDate!: Date;
+
+  @Field()
+  @Column({ nullable: true })
+  returnedDate: Date;
 
   @Field(() => Int)
   @Column({ default: 0 })

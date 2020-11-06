@@ -1,3 +1,6 @@
+import { CheckedOutBooks } from "./../entities/CheckedOutBooks";
+import { isAuth } from "./../middleware/isAuth";
+import { Book } from "./../entities/Book";
 import { hash, verify } from "argon2";
 import {
   Arg,
@@ -7,6 +10,7 @@ import {
   ObjectType,
   Query,
   Resolver,
+  UseMiddleware,
 } from "type-graphql";
 import { getConnection } from "typeorm";
 import { User } from "./../entities/User";
@@ -14,6 +18,7 @@ import { MyContext } from "./../types/MyContext";
 import { UserInputType } from "./../utils/UserInput";
 import { validateRegister } from "./../utils/validateRegister";
 import jwt from "jsonwebtoken";
+import dayjs from "dayjs";
 
 @ObjectType()
 class UserResponse {
@@ -36,15 +41,12 @@ class FieldError {
 @Resolver()
 export class UserResolver {
   @Query(() => User, { nullable: true })
-  me(@Ctx() { req }: MyContext) {
+  async me(@Ctx() { req }: MyContext) {
     if (!req.userId) {
       return null;
     }
-    return User.findOne({
-      where: {
-        id: req.userId,
-      },
-    });
+    const user = await User.findOne(req.userId);
+    return user;
   }
 
   @Query(() => [User])
@@ -76,6 +78,7 @@ export class UserResolver {
           username: options.name,
           email: emailToLower,
           password: hashedPassword,
+          isLibrarian: true,
         })
         .execute();
 
@@ -87,8 +90,6 @@ export class UserResolver {
         maxAge: 100000000,
       });
     } catch (error) {
-      console.log(error);
-
       if (error.code === "23505") {
         return {
           errors: [
@@ -133,6 +134,7 @@ export class UserResolver {
       httpOnly: true,
       maxAge: 100000000000,
     });
+
     return { user };
   }
 
@@ -142,6 +144,25 @@ export class UserResolver {
     return true;
   }
 
-  // @Mutation(() => Boolean)
-  // async borrowBook(@Arg("bookId") bookId: number) {}
+  @Mutation(() => CheckedOutBooks)
+  @UseMiddleware(isAuth)
+  async borrowBook(
+    @Arg("bookId") bookId: number,
+    @Ctx() { req }: MyContext
+  ): Promise<CheckedOutBooks | boolean> {
+    const book = await Book.findOne(bookId);
+    const user = await User.findOne(req.userId);
+    let checkOutBook;
+    if (book) {
+      checkOutBook = CheckedOutBooks.create({
+        issuedBy: user,
+        issuedBook: book,
+        returnDate: dayjs(new Date()).add(7, "day"),
+      }).save();
+    } else {
+      return false;
+    }
+
+    return checkOutBook;
+  }
 }

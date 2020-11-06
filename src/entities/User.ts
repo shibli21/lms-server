@@ -4,11 +4,9 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { CheckedOutBooks } from "./CheckedOutBooks";
 
 @Entity()
 @ObjectType()
@@ -44,15 +42,13 @@ export class User extends BaseEntity {
   @Field(() => Int)
   numberOfBooksCheckedOut!: number;
 
-  @OneToMany(() => CheckedOutBooks, (checkedOutBooks) => checkedOutBooks.id)
-  @Field(() => [CheckedOutBooks], { defaultValue: [] })
-  checkedOutBooks: CheckedOutBooks[];
-
   @Field(() => String)
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Field(() => String)
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
+
+//

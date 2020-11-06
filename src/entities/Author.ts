@@ -24,7 +24,6 @@ export class Author extends BaseEntity {
   description!: string;
 
   @OneToMany(() => Book, (book) => book.author)
-  // @JoinColumn()
   @Field(() => [Book], { nullable: true })
   books: Book[];
 }
