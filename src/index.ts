@@ -9,6 +9,7 @@ import { buildSchema } from "type-graphql";
 import { createConnection } from "typeorm";
 import { Author } from "./entities/Author";
 import { Book } from "./entities/Book";
+import { BookItem } from "./entities/BookItem";
 import { CheckedOutBooks } from "./entities/CheckedOutBooks";
 import { User } from "./entities/User";
 import { AuthorResolver } from "./resolvers/Author";
@@ -29,7 +30,7 @@ const main = async () => {
     database: "library",
     synchronize: true,
     logging: true,
-    entities: [Author, Book, CheckedOutBooks, User],
+    entities: [Author, Book, CheckedOutBooks, User, BookItem],
   });
 
   const app = express();

@@ -1,3 +1,4 @@
+import { BookItem } from "./BookItem";
 import { Field, ObjectType } from "type-graphql";
 import {
   BaseEntity,
@@ -8,7 +9,6 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { Author } from "./Author";
 
 @Entity()
 @ObjectType()
@@ -23,11 +23,15 @@ export class Book extends BaseEntity {
 
   @Column()
   @Field()
-  title!: string;
+  rackNumber!: string;
 
-  @ManyToOne(() => Author, (author) => author.books, { cascade: true })
-  @Field(() => Author)
-  author: Author;
+  @Column({ default: true })
+  @Field()
+  status!: boolean;
+
+  @ManyToOne(() => BookItem, (bookItem) => bookItem.books)
+  @Field(() => BookItem)
+  bookItem: BookItem;
 
   @Field(() => String)
   @CreateDateColumn()

@@ -6,7 +6,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Book } from "./Book";
+import { BookItem } from "./BookItem";
 
 @Entity()
 @ObjectType()
@@ -20,10 +20,10 @@ export class Author extends BaseEntity {
   authorName!: string;
 
   @Column()
-  @Field()
-  description!: string;
+  @Field({ nullable: true })
+  description: string;
 
-  @OneToMany(() => Book, (book) => book.author)
-  @Field(() => [Book], { nullable: true })
-  books: Book[];
+  @OneToMany(() => BookItem, (bookItem) => bookItem.author)
+  @Field(() => [BookItem], { nullable: true })
+  books: BookItem[];
 }
