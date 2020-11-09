@@ -44,8 +44,13 @@ class BookItemInputType {
 
 @Resolver()
 export class BookResolver {
+  @Query(() => BookItem)
+  bookItem(@Arg("id", () => Int) id: number) {
+    return BookItem.findOne(id, { relations: ["author", "books"] });
+  }
+
   @Query(() => [BookItem])
-  bookItem() {
+  bookItems() {
     return BookItem.find({ relations: ["author", "books"] });
   }
 
@@ -78,9 +83,8 @@ export class BookResolver {
     @Arg("bookInput") bookInput: BookInputType
   ): Promise<BookItem | null | undefined> {
     const bookItem = await BookItem.findOne(bookInput.bookItemId, {
-      relations: ["books"],
+      relations: ["books", "author"],
     });
-    console.log("BookResolver -> bookItem", bookItem);
 
     const book = await Book.create({
       isbnNumber: bookInput.isbnNumber,

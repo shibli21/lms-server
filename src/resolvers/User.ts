@@ -6,6 +6,7 @@ import {
   Arg,
   Ctx,
   Field,
+  Int,
   Mutation,
   ObjectType,
   Query,
@@ -147,17 +148,21 @@ export class UserResolver {
   @Mutation(() => CheckedOutBooks)
   @UseMiddleware(isAuth)
   async borrowBook(
-    @Arg("bookId") bookId: number,
+    @Arg("bookISBN", () => Int) bookISBN: number,
     @Ctx() { req }: MyContext
   ): Promise<CheckedOutBooks | boolean> {
-    const book = await Book.findOne(bookId);
+    const book = await Book.findOne({
+      where: {
+        isbnNumber: bookISBN,
+      },
+    });
     const user = await User.findOne(req.userId);
     let checkOutBook;
     if (book) {
       checkOutBook = CheckedOutBooks.create({
         issuedBy: user,
         issuedBook: book,
-        returnDate: dayjs(new Date()).add(7, "day"),
+        returnDate: dayjs(new Date()).add(7, "day").toDate(),
       }).save();
     } else {
       return false;

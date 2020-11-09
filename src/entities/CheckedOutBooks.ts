@@ -33,7 +33,7 @@ export class CheckedOutBooks extends BaseEntity {
   @Column()
   returnDate!: Date;
 
-  @Field()
+  @Field({ nullable: true })
   @Column({ nullable: true })
   returnedDate: Date;
 
