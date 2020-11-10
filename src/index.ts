@@ -1,3 +1,4 @@
+import { BookItemResolver } from "./resolvers/BookItem";
 import { ApolloServer } from "apollo-server-express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -53,6 +54,7 @@ const main = async () => {
       resolvers: [
         UserResolver,
         BookResolver,
+        BookItemResolver,
         AuthorResolver,
         CheckedOutBooksResolver,
       ],

@@ -1,25 +1,19 @@
-import { CheckedOutBooks } from "./../entities/CheckedOutBooks";
-import { isAuth } from "./../middleware/isAuth";
-import { Book } from "./../entities/Book";
 import { hash, verify } from "argon2";
+import jwt from "jsonwebtoken";
 import {
   Arg,
   Ctx,
   Field,
-  Int,
   Mutation,
   ObjectType,
   Query,
   Resolver,
-  UseMiddleware,
 } from "type-graphql";
 import { getConnection } from "typeorm";
 import { User } from "./../entities/User";
 import { MyContext } from "./../types/MyContext";
 import { UserInputType } from "./../utils/UserInput";
 import { validateRegister } from "./../utils/validateRegister";
-import jwt from "jsonwebtoken";
-import dayjs from "dayjs";
 
 @ObjectType()
 class UserResponse {
@@ -143,31 +137,5 @@ export class UserResolver {
   logout(@Ctx() { res }: MyContext) {
     res.clearCookie("token");
     return true;
-  }
-
-  @Mutation(() => CheckedOutBooks)
-  @UseMiddleware(isAuth)
-  async borrowBook(
-    @Arg("bookISBN", () => Int) bookISBN: number,
-    @Ctx() { req }: MyContext
-  ): Promise<CheckedOutBooks | boolean> {
-    const book = await Book.findOne({
-      where: {
-        isbnNumber: bookISBN,
-      },
-    });
-    const user = await User.findOne(req.userId);
-    let checkOutBook;
-    if (book) {
-      checkOutBook = CheckedOutBooks.create({
-        issuedBy: user,
-        issuedBook: book,
-        returnDate: dayjs(new Date()).add(7, "day").toDate(),
-      }).save();
-    } else {
-      return false;
-    }
-
-    return checkOutBook;
   }
 }
