@@ -16,6 +16,7 @@ import { User } from "../entities/User";
 import { isAuth } from "../middleware/isAuth";
 import { MyContext } from "../types/MyContext";
 import { CheckedOutBooks } from "./../entities/CheckedOutBooks";
+import { FieldError } from "./../utils/FieldErrorType";
 
 @ObjectType()
 class IssuedBookForCurrentUser {
@@ -38,6 +39,15 @@ class IssuedBookForCurrentUser {
   title: string;
 }
 
+@ObjectType()
+class IssueBookResponse {
+  @Field(() => [FieldError], { nullable: true })
+  errors?: FieldError[];
+
+  @Field(() => CheckedOutBooks, { nullable: true })
+  checkOutBook?: CheckedOutBooks;
+}
+
 @Resolver()
 export class CheckedOutBooksResolver {
   @Query(() => [CheckedOutBooks])
@@ -45,30 +55,108 @@ export class CheckedOutBooksResolver {
     return CheckedOutBooks.find({ relations: ["issuedBy", "issuedBook"] });
   }
 
-  @Mutation(() => CheckedOutBooks)
+  @Mutation(() => IssueBookResponse)
   @UseMiddleware(isAuth)
   async borrowBook(
     @Arg("bookISBN", () => Int) bookISBN: number,
     @Ctx() { req }: MyContext
-  ): Promise<CheckedOutBooks | boolean> {
+  ): Promise<IssueBookResponse> {
+    // check if the book is valid
     const book = await Book.findOne({
+      relations: ["bookItem"],
       where: {
         isbnNumber: bookISBN,
+        status: true,
       },
     });
-    const user = await User.findOne(req.userId);
-    let checkOutBook;
-    if (book) {
-      checkOutBook = CheckedOutBooks.create({
-        issuedBy: user,
-        issuedBook: book,
-        returnDate: dayjs(new Date()).add(7, "day").toDate(),
-      }).save();
-    } else {
-      return false;
+
+    if (!book) {
+      return {
+        errors: [
+          {
+            field: "book",
+            message: "Book Not Available",
+          },
+        ],
+      };
     }
 
-    return checkOutBook;
+    const user = await User.findOne(req.userId);
+
+    // check if user issued the book previously and returned it
+    const issuebookpreviouslyandnotreturned: Array<any> = await getConnection().query(
+      `
+        SELECT cbook.*
+          FROM checked_out_books AS cbook
+            WHERE cbook."issuedById" = $1
+                  AND cbook."issuedBookId" = $2
+                  AND cbook."returnedDate" IS NULL
+            ORDER BY cbook."createdAt" DESC
+        `,
+      [user?.id, book?.bookItem.id]
+    );
+
+    if (issuebookpreviouslyandnotreturned.length !== 0) {
+      return {
+        errors: [
+          {
+            field: "book",
+            message: "not returned previously issued book",
+          },
+        ],
+      };
+    }
+    // check if user can issue new book
+    if (user && user.numberOfBooksCheckedOut > 1000) {
+      return {
+        errors: [
+          {
+            field: "book",
+            message: "You can't issue any more books",
+          },
+        ],
+      };
+    }
+
+    // increase the number of issued books for that user
+    const updatedUser = await getConnection()
+      .createQueryBuilder()
+      .update(User)
+      .set({ numberOfBooksCheckedOut: user?.numberOfBooksCheckedOut! + 1 })
+      .where("id = :id", { id: req.userId })
+      .returning("*")
+      .execute();
+
+    //Update book status
+    await getConnection()
+      .createQueryBuilder()
+      .update(Book)
+      .set({ status: false })
+      .where("id = :id", { id: book?.id })
+      .execute();
+
+    let checkOutBook;
+    if (book) {
+      let cb = await CheckedOutBooks.create({
+        issuedBook: book,
+        issuedBy: updatedUser.raw[0],
+        returnDate: dayjs(new Date()).add(7, "day").toDate(),
+      }).save();
+      checkOutBook = await CheckedOutBooks.findOne(cb.id, {
+        relations: ["issuedBy", "issuedBook"],
+      });
+    } else {
+      return {
+        errors: [
+          {
+            field: "book",
+            message: "error 404!",
+          },
+        ],
+      };
+    }
+
+    return { checkOutBook };
   }
 
   @Query(() => [IssuedBookForCurrentUser])

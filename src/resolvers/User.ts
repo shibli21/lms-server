@@ -1,3 +1,4 @@
+import { FieldError } from "./../utils/FieldErrorType";
 import { hash, verify } from "argon2";
 import jwt from "jsonwebtoken";
 import {
@@ -22,15 +23,6 @@ class UserResponse {
 
   @Field(() => User, { nullable: true })
   user?: User;
-}
-
-@ObjectType()
-class FieldError {
-  @Field()
-  field: string;
-
-  @Field()
-  message: string;
 }
 
 @Resolver()
