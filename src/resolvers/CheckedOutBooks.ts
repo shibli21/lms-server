@@ -11,10 +11,10 @@ import {
   UseMiddleware,
 } from "type-graphql";
 import { getConnection } from "typeorm";
-import { Book } from "../entities/Book";
 import { User } from "../entities/User";
 import { isAuth } from "../middleware/isAuth";
 import { MyContext } from "../types/MyContext";
+import { Book } from "./../entities/Book";
 import { CheckedOutBooks } from "./../entities/CheckedOutBooks";
 import { FieldError } from "./../utils/FieldErrorType";
 
@@ -37,6 +37,9 @@ class IssuedBookForCurrentUser {
 
   @Field()
   title: string;
+
+  @Field()
+  isbnNumber: number;
 }
 
 @ObjectType()
@@ -170,7 +173,7 @@ export class CheckedOutBooksResolver {
     if (user) {
       checkOutBook = await getConnection().query(
         `
-        SELECT cbook.*,
+        SELECT cbook.*,book."isbnNumber",
           (SELECT title
             FROM book_item
               WHERE book_item."id" = book."bookItemId") "title"
@@ -190,5 +193,58 @@ export class CheckedOutBooksResolver {
     }
 
     return checkOutBook;
+  }
+
+  @Mutation(() => IssueBookResponse)
+  @UseMiddleware(isAuth)
+  async returnBook(
+    @Arg("bookISBN", () => Int) bookISBN: number,
+    @Ctx() { req }: MyContext
+  ): Promise<IssueBookResponse> {
+    const book = await Book.findOne({
+      where: {
+        isbnNumber: bookISBN,
+      },
+      relations: ["bookItem"],
+    });
+
+    const cb = await CheckedOutBooks.findOne({
+      relations: ["issuedBy", "issuedBook"],
+      where: {
+        issuedBook: book?.id,
+        issuedBy: req.userId,
+        returnedDate: null,
+      },
+    });
+
+    if (!cb) {
+      return {
+        errors: [
+          {
+            field: "isbn",
+            message: "no such book",
+          },
+        ],
+      };
+    }
+
+    const checkOutBook = await getConnection()
+      .createQueryBuilder()
+      .update(CheckedOutBooks)
+      .set({ returnedDate: new Date() })
+      .where(`id = :id`, { id: cb?.id })
+      .returning("*")
+      .execute();
+
+    await getConnection()
+      .createQueryBuilder()
+      .update(Book)
+      .set({ status: true })
+      .where(`id = :id`, { id: book?.id })
+      .execute();
+
+    return {
+      checkOutBook: checkOutBook.raw[0],
+    };
   }
 }
