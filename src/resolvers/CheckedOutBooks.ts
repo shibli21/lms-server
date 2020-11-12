@@ -243,6 +243,15 @@ export class CheckedOutBooksResolver {
       .where(`id = :id`, { id: book?.id })
       .execute();
 
+    await getConnection()
+      .createQueryBuilder()
+      .update(User)
+      .set({
+        numberOfBooksCheckedOut: () => `"numberOfBooksCheckedOut" - 1`,
+      })
+      .where(`id = :id`, { id: req.userId })
+      .execute();
+
     return {
       checkOutBook: checkOutBook.raw[0],
     };

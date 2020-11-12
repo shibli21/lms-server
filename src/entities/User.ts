@@ -1,6 +1,7 @@
 import { Field, Int, ObjectType } from "type-graphql";
 import {
   BaseEntity,
+  Check,
   Column,
   CreateDateColumn,
   Entity,
@@ -39,6 +40,7 @@ export class User extends BaseEntity {
   isLibrarian!: boolean;
 
   @Column({ default: 0 })
+  @Check(`"numberOfBooksCheckedOut" >= 0`)
   @Field(() => Int)
   numberOfBooksCheckedOut!: number;
 
