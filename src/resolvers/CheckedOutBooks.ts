@@ -60,7 +60,7 @@ export class CheckedOutBooksResolver {
 
   @Mutation(() => IssueBookResponse)
   @UseMiddleware(isAuth)
-  async borrowBook(
+  async issueBook(
     @Arg("bookISBN", () => Int) bookISBN: number,
     @Ctx() { req }: MyContext
   ): Promise<IssueBookResponse> {
@@ -160,6 +160,80 @@ export class CheckedOutBooksResolver {
     }
 
     return { checkOutBook };
+  }
+
+  @Mutation(() => IssueBookResponse)
+  @UseMiddleware(isAuth)
+  async renewBook(
+    @Arg("ISBNNumber", () => Int) ISBNNumber: number,
+    @Arg("days", () => Int) days: number,
+    @Ctx() { req }: MyContext
+  ): Promise<IssueBookResponse> {
+    // check if the book is valid
+    if (days > 5) {
+      return {
+        errors: [
+          {
+            field: "days",
+            message: "You can not renew for more than 5 days",
+          },
+        ],
+      };
+    }
+
+    const book = await Book.findOne({
+      where: {
+        isbnNumber: ISBNNumber,
+        status: false,
+      },
+    });
+
+    if (!book) {
+      return {
+        errors: [
+          {
+            field: "isbn",
+            message: "Book Not Available",
+          },
+        ],
+      };
+    }
+
+    const checkedOutBook = await CheckedOutBooks.findOne({
+      relations: ["issuedBy", "issuedBook"],
+      where: {
+        issuedBook: { id: book?.id },
+        issuedBy: {
+          id: req.userId,
+        },
+      },
+    });
+
+    if (!checkedOutBook) {
+      return {
+        errors: [
+          {
+            field: "isbn",
+            message: "Book Not Available",
+          },
+        ],
+      };
+    }
+
+    await getConnection()
+      .createQueryBuilder()
+      .update(CheckedOutBooks)
+      .set({
+        returnDate: dayjs(checkedOutBook.returnDate).add(days, "day").toDate(),
+      })
+      .where(`id = :id`, { id: checkedOutBook.id })
+      .execute();
+
+    return {
+      checkOutBook: await CheckedOutBooks.findOne(checkedOutBook.id, {
+        relations: ["issuedBy", "issuedBook"],
+      }),
+    };
   }
 
   @Query(() => [IssuedBookForCurrentUser])
