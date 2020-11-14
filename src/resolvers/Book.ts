@@ -17,6 +17,24 @@ import { getConnection } from "typeorm";
 import { Book } from "../entities/Book";
 
 @InputType()
+class SearchBooksInput {
+  @Field({ nullable: true })
+  title?: string;
+
+  @Field({ nullable: true })
+  author?: string;
+
+  @Field({ nullable: true })
+  category?: string;
+
+  @Field(() => Int)
+  limit?: number;
+
+  @Field(() => Int)
+  offset?: number;
+}
+
+@InputType()
 class BookInputType {
   @Field()
   isbnNumber!: number;
@@ -108,5 +126,35 @@ export class BookResolver {
         relations: ["bookItem"],
       }),
     };
+  }
+
+  @Query(() => [BookItem])
+  async searchBooks(
+    @Arg("input") { title, author, category, limit, offset }: SearchBooksInput
+  ) {
+    let booksQB = getConnection()
+      .getRepository(BookItem)
+      .createQueryBuilder("b")
+      .leftJoinAndSelect("b.books", "book")
+      .leftJoinAndSelect("b.author", "author");
+
+    if (title) {
+      booksQB = booksQB.andWhere(`"b"."title" ilike :title`, {
+        title: `%${title}%`,
+      });
+    }
+    if (author) {
+      booksQB = booksQB.andWhere(`"author"."authorName" ilike :author`, {
+        author: `%${author}%`,
+      });
+    }
+
+    if (category) {
+      booksQB = booksQB.andWhere(`"b"."category" ilike :category`, {
+        category: `%${category}%`,
+      });
+    }
+
+    return booksQB.take(limit).skip(offset).getMany();
   }
 }
