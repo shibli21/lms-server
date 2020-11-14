@@ -207,6 +207,9 @@ export class CheckedOutBooksResolver {
           id: req.userId,
         },
       },
+      order: {
+        id: -1,
+      },
     });
 
     if (!checkedOutBook) {
