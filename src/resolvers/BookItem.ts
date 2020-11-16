@@ -81,7 +81,8 @@ export class BookItemResolver {
   async paginatedBookItems(
     @Arg("offset", () => Int) offset: number,
     @Arg("limit", () => Int) limit: number,
-    @Arg("input") { title, author, category }: SearchBooksInput
+    @Arg("input", { nullable: true })
+    { title, author, category }: SearchBooksInput
   ): Promise<PaginatedBookItems> {
     const realLimit = Math.min(50, limit);
     const reaLimitPlusOne = realLimit + 1;
