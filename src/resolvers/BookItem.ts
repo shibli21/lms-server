@@ -46,12 +46,6 @@ class SearchBooksInput {
 
   @Field({ nullable: true })
   category?: string;
-
-  @Field(() => Int)
-  limit: number;
-
-  @Field(() => Int)
-  offset?: number;
 }
 
 @Resolver()
@@ -85,7 +79,9 @@ export class BookItemResolver {
 
   @Query(() => PaginatedBookItems)
   async paginatedBookItems(
-    @Arg("input") { title, author, category, limit, offset }: SearchBooksInput
+    @Arg("offset", () => Int) offset: number,
+    @Arg("limit", () => Int) limit: number,
+    @Arg("input") { title, author, category }: SearchBooksInput
   ): Promise<PaginatedBookItems> {
     const realLimit = Math.min(50, limit);
     const reaLimitPlusOne = realLimit + 1;
